@@ -13,11 +13,15 @@ Digital scrolling clock
 # ./clock.py r g b
 </pre>
 
-__clock_demo.py__ - Digital scrolling clock. Demo version
+##__clock_demo.py__ 
+
+Demo version of the digital scrolling clock:
 
 <pre>
 # ./clock_demo.py
 </pre>
+
+<iframe width="560" height="315" src="//www.youtube.com/embed/Qszwey7jYl4" frameborder="0" allowfullscreen></iframe>
 
 (c) Sergio Tanzilli
 sergio@tanzilli.com

@@ -1,5 +1,4 @@
-led-utils
-=========
+#led-utils
 
 Set of utilities to manage a RGB 32x32 led panel
 
@@ -13,7 +12,7 @@ Digital scrolling clock
 # ./clock.py r g b
 </pre>
 
-##__clock_demo.py__ 
+#__clock_demo.py__ 
 
 Demo version of the digital scrolling clock:
 
@@ -21,7 +20,7 @@ Demo version of the digital scrolling clock:
 # ./clock_demo.py
 </pre>
 
-* See this programm running on: www.youtube.com/embed/Qszwey7jYl4
+* See this programm while is running on: www.youtube.com/embed/Qszwey7jYl4
 
 (c) Sergio Tanzilli
 sergio@tanzilli.com

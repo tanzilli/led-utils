@@ -21,7 +21,7 @@ Demo version of the digital scrolling clock:
 # ./clock_demo.py
 </pre>
 
-<iframe width="560" height="315" src="//www.youtube.com/embed/Qszwey7jYl4" frameborder="0" allowfullscreen></iframe>
+* See this programm running on: www.youtube.com/embed/Qszwey7jYl4
 
 (c) Sergio Tanzilli
 sergio@tanzilli.com

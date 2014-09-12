@@ -1,27 +1,8 @@
 #led-utils
 
-Set of utilities to manage a RGB 32x32 led panel
+Set of utilities to manage a RGB 32x32 led panel with [Arieta G25 Linux SoM](http://www.acmesystems.it/arietta)
 
-Visit: http://www.acmesystems.it/ledpanel
+* The complete doc is available on: http://www.acmesystems.it/ledpanel for more info.
+* See some of this programs while are running on Arietta G25: www.youtube.com/embed/Qszwey7jYl4
 
-#__clock.py__
-
-Digital scrolling clock
-
-<pre>
-# ./clock.py r g b
-</pre>
-
-#__clock_demo.py__ 
-
-Demo version of the digital scrolling clock:
-
-<pre>
-# ./clock_demo.py
-</pre>
-
-* See this programm while is running on: www.youtube.com/embed/Qszwey7jYl4
-
-(c) Sergio Tanzilli
-sergio@tanzilli.com
-http://www.acmesystems.it/ledpanel
+(c) 2014 - Sergio Tanzilli - sergio@tanzilli.com

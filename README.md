@@ -9,5 +9,6 @@ __clock.py__ - Digital scrolling clock
 # ./clock.py r g b
 </pre>
 
-(c) Sergio Tanzilli - sergio@tanzilli.com
+(c) Sergio Tanzilli
+sergio@tanzilli.com
 http://www.acmesystems.it/ledpanel

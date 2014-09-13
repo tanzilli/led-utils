@@ -3,43 +3,123 @@
 # (c) 2014 Sergio Tanzilli - sergio@tanzilli.com 
 
 import sys
+import tty
+import termios
 import os
+import StringIO
 from PIL import Image
 from PIL import ImageEnhance
+
 size = 32, 32
 
-if len(sys.argv)<2 or len(sys.argv)>4:
+def get1char():
+	fd = sys.stdin.fileno()
+	old_settings = termios.tcgetattr(fd)
+
+	try:
+		tty.setraw(sys.stdin.fileno())
+		ch = sys.stdin.read(1)
+	finally:
+		termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+	return ch
+
+
+if len(sys.argv)<2 or len(sys.argv)>2:
 	print "Syntax:"
-	print "  %s imagefile brightness contrast" % (sys.argv[0])
+	print "  %s imagefile" % (sys.argv[0])
 	quit()
 		
-print 'Number of arguments:', len(sys.argv), 'arguments.'
-print 'Argument List:', str(sys.argv)
-
 filename=os.path.splitext(os.path.basename(sys.argv[1]))[0]
 
 im=Image.open(sys.argv[1]).convert('RGB')
+#im.thumbnail(size,Image.ANTIALIAS)
+im.thumbnail(size)
 
-im.thumbnail(size,Image.ANTIALIAS)
+brightness=1.0
+contrast=1.0
+color=1.0
+sharpness=1.0
+angle=0
 
-#Change the image brightness
-bright = ImageEnhance.Brightness(im)
-im = bright.enhance(float(sys.argv[2]))
+im_final=im
 
-#Change the image contrast
-contr = ImageEnhance.Contrast(im)
-im = contr.enhance(float(sys.argv[3]))
+while True:
+	print ""
+	print "------------------------"
+	print "[1] <- Brightness -> [2]"
+	print "[3] <-  Contrast  -> [4]"
+	print "[5] <-   Color    -> [6]"
+	print "[7] <- Sharpness  -> [8]"
+	print "[q] <-   Rotate   -> [w]"
+	print "------------------------"
+	print ""
+	
+	#Generate a PPM image (a format very similar to byte array RGB we need)
+	output = StringIO.StringIO()
+	im_final.save(output, format='PPM')
+	buf=output.getvalue()
 
-#Save the image in .ppm format
-im.save(filename + ".ppm")
+	#Discard the first 13 bytes of header and save the rest (the
+	#RGB array) on the ledpanel driver output buffer
+	out_file = open("/sys/class/ledpanel/rgb_buffer","w")
+	out_file.write(buf[13:])
+	out_file.close()
 
-in_file = open(filename + ".ppm","r")
-buf = in_file.read()
-in_file.close()
+	print "Select (Q or X to exit)"
+	input_char=get1char()
 
-out_file = open(filename + ".rgb","w")
-out_file.write(buf[13:])
-out_file.close()
+	if (input_char=="1"):
+		if (brightness>0.0):
+			brightness=brightness-0.1
+
+	if (input_char=="2"):
+		if (brightness<1.0):
+			brightness=brightness+0.1
+	
+	if (input_char=="3"):
+		if (contrast>0.0):
+			contrast=contrast-0.1
+
+	if (input_char=="4"):
+		if (contrast<1.0):
+			contrast=contrast+0.1
+
+	if (input_char=="5"):
+		if (color>0.0):
+			color=color-0.1
+
+	if (input_char=="6"):
+		if (color<1.0):
+			color=color+0.1
+
+	if (input_char=="7"):
+		if (sharpness>0.0):
+			sharpness=sharpness-0.1
+
+	if (input_char=="8"):
+		if (sharpness<1.0):
+			sharpness=sharpness+0.1
+
+	if (input_char=="q"):
+		if (angle<180):
+			angle=angle+5
+
+	if (input_char=="w"):
+		if (angle>-180):
+			angle=angle-5
+
+
+	print angle
+
+	im_final=ImageEnhance.Brightness(im).enhance(brightness)
+	im_final=ImageEnhance.Brightness(im_final).enhance(contrast)
+	im_final=ImageEnhance.Color(im_final).enhance(color)
+	im_final=ImageEnhance.Sharpness(im_final).enhance(sharpness)
+
+	im_final=im_final.rotate(angle)
+
+	if (input_char=="Q" or input_char==" "):
+		exit() 
 
 
 

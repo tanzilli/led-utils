@@ -6,7 +6,7 @@ The complete documentation with schematics is available on http://www.acmesystem
 
 Video demo:
 
-* [Sliding clock](www.youtube.com/embed/Qszwey7jYl4)
+* [Sliding clock](http://www.youtube.com/embed/Qszwey7jYl4)
 
 Where to buy:
 

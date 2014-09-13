@@ -2,7 +2,9 @@
 
 Set of utilities to manage one RGB 32x32 led panel with an [Arieta G25 Linux Embedded SoM](http://www.acmesystems.it/arietta)
 
-The complete documentation with schematics is available on http://www.acmesystems.it/ledpanel.
+Project documentation:
+
+* [32x32 RGB Led Panel home page](http://www.acmesystems.it/ledpanel)
 
 Video demo:
 

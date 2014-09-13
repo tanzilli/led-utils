@@ -12,7 +12,7 @@ import time
 size = 32, 32
 
 #Load a TTF font
-font = ImageFont.truetype("Ubuntu-B.ttf", 34)
+font = ImageFont.truetype("Ubuntu-B.ttf", 30)
 
 #Count from 0 to 99
 for i in range(0,100):
@@ -27,7 +27,7 @@ for i in range(0,100):
 	counter="%02d" % i
 	
 	#Draw counter text on the panel 
-	draw.text((2, 0), counter, (0,0,1<<5), font=font)
+	draw.text((0,0), counter, (0,0,1<<5), font=font)
 	del draw
 
 	#Generate a PPM image (a format very similar to byte array RGB we need)

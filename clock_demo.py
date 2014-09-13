@@ -15,7 +15,7 @@ import select
 print "clock_demo.py"
 print "  press ENTER to exit"
 
-#Use a TTF font
+#Load a TTF font
 font = ImageFont.truetype('Ubuntu-B.ttf', 30)
 
 #Initial color
@@ -25,6 +25,8 @@ b=1
 
 #Create a 32x32 black image  
 im = Image.new("RGB", (32, 32), "black")
+
+#Create a draw object to draw primitives on the new image 
 draw = ImageDraw.Draw(im)
 
 #Get the dimension of the finale clock image

@@ -8,23 +8,25 @@ import Image, ImageDraw, ImageFont
 import StringIO
 import time
 
+#Panel size
 size = 32, 32
 
-ttf = 'Digital Dismay.otf'
-font = ImageFont.truetype(ttf, 35)
+#Load a TTF font
+font = ImageFont.truetype("Ubuntu-B.ttf", 34)
 
+#Send x times the same message
 for i in range(0,100):
+	
+	#Create a 32x32 black image  
 	im=Image.new("RGB",size,"black")
 
+	#Create a draw object to draw primitives on the new image 
 	draw = ImageDraw.Draw(im)
-	#draw.line((0, 0) + im.size, fill=128, width=3)
-	#draw.line((0, im.size[1], im.size[0], 0), fill=128)
 	counter="%02d" % i
+	
+	#Draw the full message text on the image 
 	draw.text((2, 0), counter, (0,0,1<<5), font=font)
 	del draw
-
-	#Save the image in .ppm format
-	#im.save("output" + ".jpg")
 
 	output = StringIO.StringIO()
 	im.save(output, format='PPM')

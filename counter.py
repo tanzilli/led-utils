@@ -15,7 +15,7 @@ size = 32, 32
 font = ImageFont.truetype("Ubuntu-B.ttf", 30)
 
 #Count from 0 to 99
-for i in range(0,100):
+for i in range(99,-1,-1):
 	
 	#Create a 32x32 black image  
 	im=Image.new("RGB",size,"black")

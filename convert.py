@@ -9,6 +9,7 @@ import os
 import StringIO
 from PIL import Image
 from PIL import ImageEnhance
+import PIL.ImageOps    
 
 size = 32, 32
 
@@ -40,6 +41,8 @@ contrast=1.0
 color=1.0
 sharpness=1.0
 angle=0
+invert=0
+out_counter=0;
 
 im_final=im
 
@@ -51,6 +54,9 @@ while True:
 	print "[5] <-   Color    -> [6]"
 	print "[7] <- Sharpness  -> [8]"
 	print "[q] <-   Rotate   -> [w]"
+	print "[i] Invert color        "
+	print "[r] Reset               "
+	print "[s] Save                "
 	print "------------------------"
 	print ""
 	
@@ -65,7 +71,7 @@ while True:
 	out_file.write(buf[13:])
 	out_file.close()
 
-	print "Select (Q or X to exit)"
+	print "Select (space exit): ",
 	input_char=get1char()
 
 	if (input_char=="1"):
@@ -108,6 +114,34 @@ while True:
 		if (angle>-180):
 			angle=angle-5
 
+	if (input_char=="s"):
+		out_filename="panel_%04d.rgb" % out_counter
+		out_counter=out_counter+1;
+		
+		output = StringIO.StringIO()
+		im_final.save(output, format='PPM')
+		buf=output.getvalue()
+
+		out_file = open(out_filename,"w")
+		out_file.write(buf[13:])
+		out_file.close()
+
+		print "Saved on %s" % out_filename
+
+	if (input_char=="r"):
+		if (angle>-180):
+			brightness=1.0
+			contrast=1.0
+			color=1.0
+			sharpness=1.0
+			angle=0
+			invert=0
+
+	if (input_char=="i"):
+		if (invert==1):
+			invert=0;
+		else:		
+			invert=1;
 
 	print angle
 
@@ -115,6 +149,9 @@ while True:
 	im_final=ImageEnhance.Brightness(im_final).enhance(contrast)
 	im_final=ImageEnhance.Color(im_final).enhance(color)
 	im_final=ImageEnhance.Sharpness(im_final).enhance(sharpness)
+
+	if (invert==1):
+		im_final = PIL.ImageOps.invert(im_final)
 
 	im_final=im_final.rotate(angle)
 

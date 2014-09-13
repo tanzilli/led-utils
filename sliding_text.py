@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# 2 digit counter example for 32x32 RGB led panel
+# (c) 2014 Sergio Tanzilli - sergio@tanzilli.com 
 
 import sys
 import os

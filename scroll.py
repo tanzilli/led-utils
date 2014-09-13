@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# Sliding text for 32x32 RGB led panel
+# (c) 2014 Sergio Tanzilli - sergio@tanzilli.com 
 
 import time
 from datetime import datetime

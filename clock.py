@@ -24,6 +24,7 @@ b=int(sys.argv[3])
   
 im = Image.new("RGB", (32, 32), "black")
 draw = ImageDraw.Draw(im)
+draw.fontmode="1" #No antialias
 width, height = font.getsize("88:88:88")
  
 def format_time():

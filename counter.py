@@ -22,7 +22,8 @@ for i in range(99,-1,-1):
 
 	#Create a draw object to draw primitives on the new image 
 	draw = ImageDraw.Draw(im)
-
+	draw.fontmode="1" #No antialias
+	
 	#Format the counter in 2 digit
 	counter="%02d" % i
 	

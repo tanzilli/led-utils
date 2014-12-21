@@ -7,7 +7,6 @@ from datetime import datetime
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
-import StringIO
 import thread
 import threading
 
@@ -16,7 +15,7 @@ sliding_delay=14	# keep in sync with index.html
 red=1<<5
 green=1<<5
 blue=1<<5
-baseline=-1	# vertical text position: -5=top, +4=bottom(no descenders)
+baseline=-2	# vertical text position: -5=top, +4=bottom(no descenders)
 
 class SlidingMessage(threading.Thread):
 	message="Vuoto"
@@ -43,22 +42,18 @@ class SlidingMessage(threading.Thread):
 		global sliding_delay
 
 		font1 = ImageFont.truetype('Ubuntu-B.ttf',30)
+		# font1 = ImageFont.truetype('LiberationSans-Regular.ttf',30)
 
 		im = Image.new("RGB", (32, 32), "black")		# The 'off' color
 		draw = ImageDraw.Draw(im)
 		draw.fontmode="1" #No antialias
-		width, height = font1.getsize(self.message)	
+		width, height = font1.getsize(self.message)
 		
 		out_file = open("/sys/class/ledpanel/rgb_buffer","w")
-		output = StringIO.StringIO()
 
 		if self.message=="":
-			output.truncate(0)
-			im.save(output, format='PPM')
-			buf=output.getvalue()
-
 			out_file.seek(0)
-			out_file.write(buf[13:])
+			out_file.write(im.tostring())
 			out_file.close()
 
 			while True:
@@ -76,19 +71,27 @@ class SlidingMessage(threading.Thread):
 
 			if self.invalidate_cache_request_flag:
 				self.invalidate_cache_request_flag = False
-				self.cache = [ None for i in range(32 + width + 1) ]
 
-			if self.cache[cache_idx] is None:
+				fgcol=(red,green,blue)
 				bgcol=(0<<5,0<<5,0<<5)
-				draw.rectangle((0, 0, 31, 31), outline=bgcol, fill=bgcol)	# Background color
+				if fgcol == (0,0,0):
+				  bgcol=(0<<5,0<<5,3<<5)
+				width, height = font1.getsize(self.message)
+				im0 = Image.new("RGB", (width,height), "black")
+				draw = ImageDraw.Draw(im0)
+				draw.fontmode="1" #No antialias
+				draw.rectangle((0, 0, width, height), outline=bgcol, fill=bgcol)	# Background color
+				draw.text((0,baseline), self.message, fgcol, font=font1)
 
-				color_set=(red,green,blue)
-				draw.text((x,baseline), self.message, color_set, font=font1)
-
-				output.truncate(0)
-				im.save(output, format='PPM')
-				buf=output.getvalue()
-				self.cache[cache_idx] = buf[13:]
+				self.cache = []
+				for i in range(32 + width + 1):
+					draw = ImageDraw.Draw(im)
+					draw.rectangle((0, 0, 31, 31), outline=bgcol, fill=bgcol)	# Background color
+					im.paste(im0, (32-i,0))
+					self.cache.append(im.tostring())
+				if cache_idx >= len(self.cache):
+					cache_idx=0
+					x=32
 
 			out_file.seek(0)
 			out_file.write(self.cache[cache_idx])

@@ -155,6 +155,13 @@ typedef struct VncConnection
 } VncConnection;
 
 
+// From /usr/include/glib-2.0/glib/gmacros.h
+#define FALSE (0)
+#define TRUE  (!FALSE)
+// From /usr/include/glib-2.0/glib/gtypes.h
+#define G_BIG_ENDIAN	4321
+#define G_LITTLE_ENDIAN	1234
+
 // FROM man getaddrinfo
 VncConnection *connect_vnc_server(char *hostname, char *str_port)
 {
@@ -263,15 +270,10 @@ int vnc_connection_write_u32(VncConnection *conn, u_int32_t value)
 }
 
 
-#define VNC_CONNECTION_AUTH_NONE 1
-// From /usr/include/glib-2.0/glib/gmacros.h
-#define FALSE (0)
-#define TRUE  (!FALSE)
-// From /usr/include/glib-2.0/glib/gtypes.h
-#define G_BIG_ENDIAN	4321
-#define G_LITTLE_ENDIAN	1234
-
 // FROM gtk-vnc/src/vncconnection.c
+
+#define VNC_CONNECTION_AUTH_NONE 1
+
 static int vnc_connection_before_version (VncConnection *conn, int major, int minor)
 {
   VncConnectionPrivate *priv = conn->priv;
@@ -312,7 +314,7 @@ static void vnc_connection_read_pixel_format(VncConnection *conn, VncPixelFormat
 
     fprintf(stderr, "Pixel format BPP: %d,  Depth: %d, Byte order: %d, True color: %d\n"
               "             Mask  red: %3d, green: %3d, blue: %3d\n"
-              "             Shift red: %3d, green: %3d, blue: %3d",
+              "             Shift red: %3d, green: %3d, blue: %3d\n",
               fmt->bits_per_pixel, fmt->depth, fmt->byte_order, fmt->true_color_flag,
               fmt->red_max, fmt->green_max, fmt->blue_max,
               fmt->red_shift, fmt->green_shift, fmt->blue_shift);
@@ -321,6 +323,7 @@ static void vnc_connection_read_pixel_format(VncConnection *conn, VncPixelFormat
 
 int vnc_connection_check_auth_result(VncConnection *conn)
 {
+  VncConnectionPrivate *priv = conn->priv;
   u_int32_t result = vnc_connection_read_u32(conn);
   if (!result) return TRUE;
 
@@ -332,7 +335,7 @@ int vnc_connection_check_auth_result(VncConnection *conn)
       if (len < 1 || len >= sizeof(reason)) { fprintf(stderr, "auth error: unkonw\n"); exit(4); }
       vnc_connection_read(conn, reason, len);
       reason[len] = '\0';
-      fprintf(stderr, "auth error: Server says: %s\n", reason); exit(5); }
+      fprintf(stderr, "auth error: Server says: %s\n", reason); 
       return FALSE;
     }
   return FALSE;
@@ -369,7 +372,7 @@ int vnc_connection_perform_auth(VncConnection *conn)
     return vnc_connection_check_auth_result(conn);
 }
 
-void vnc_connection_initialize(VncConnection *conn)
+int vnc_connection_initialize(VncConnection *conn)
 {
   VncConnectionPrivate *priv = conn->priv;
   int ret, i;
@@ -403,7 +406,7 @@ void vnc_connection_initialize(VncConnection *conn)
   fprintf(stderr, "Using version: %d.%d\n", priv->major, priv->minor);
 
   if (!vnc_connection_perform_auth(conn)) {
-        fprintf(stderr,"Auth failed\"); exit(4);
+        fprintf(stderr,"Auth failed\n"); exit(4);
   }
   printf("authentication successful\n");
   vnc_connection_write_u8(conn, priv->sharedFlag);	// "\1"
@@ -419,13 +422,14 @@ void vnc_connection_initialize(VncConnection *conn)
   vnc_connection_read_pixel_format(conn, &priv->fmt);
 
   // read(4, "\0@\0@ \30\0\377\0\377\0\377\0\377\20\10\0\0\0\0\0\0\0\16linux-z0"..., 8192) = 38
+  return TRUE;
 }
 
 int main(int ac, char **av)
 {
 #if 1
   VncConnection *conn = connect_vnc_server(av[1], av[2]);	// hostname [port]
-  vnc_connection_initialize(conn);
+  if (!vnc_connection_initialize(conn)) exit(8);
   
 #else
 

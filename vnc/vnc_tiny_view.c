@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <zlib.h>	// BuildRequires: zlib-devel
 
 void cursor_up(int n)
 {
@@ -146,6 +147,11 @@ typedef struct VncConnectionPrivate
   int height;
   int has_error;
   VncPixelFormat fmt;
+  char *name;
+
+  z_stream *strm;
+  z_stream streams[5];
+
 } VncConnectionPrivate;
 
 typedef struct VncConnection
@@ -421,7 +427,24 @@ int vnc_connection_initialize(VncConnection *conn)
 
   vnc_connection_read_pixel_format(conn, &priv->fmt);
 
-  // read(4, "\0@\0@ \30\0\377\0\377\0\377\0\377\20\10\0\0\0\0\0\0\0\16linux-z0"..., 8192) = 38
+  int n_name = vnc_connection_read_u32(conn);
+  if (n_name > 4096)
+    return FALSE;
+  priv->name = (char *)calloc(sizeof(char), n_name + 1);
+
+  vnc_connection_read(conn, priv->name, n_name);
+  priv->name[n_name] = 0;
+  fprintf(stderr, "Display name '%s'", priv->name);
+
+  if (vnc_connection_has_error(conn))
+    return FALSE;
+
+  memset(&priv->streams, 0, sizeof(priv->streams));	// typo in gtk-vnc/src/vncconnection?
+  /* FIXME what level? */
+  for (i = 0; i < 5; i++)
+    inflateInit(&priv->streams[i]);
+  priv->strm = NULL;
+
   return TRUE;
 }
 

@@ -173,9 +173,7 @@ VncConnection *connect_vnc_server(char *hostname, char *str_port)
 {
   struct addrinfo hints;
   struct addrinfo *result, *rp;
-  int sfd, s, j;
-  size_t len;
-  ssize_t nread;
+  int sfd, s;
 
   if (!str_port) str_port = "5900";
 
@@ -224,6 +222,7 @@ VncConnection *connect_vnc_server(char *hostname, char *str_port)
 int vnc_connection_flush(VncConnection *conn)
 {
   // we don't buffer for now.
+  return TRUE;
 }
 
 int vnc_connection_read(VncConnection *conn, char *buf, int len)
@@ -235,6 +234,7 @@ unsigned char vnc_connection_read_u8(VncConnection *conn)
 {
   u_int8_t value = 0;
   int r = read(conn->fd, &value, sizeof(value));
+  if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return value;
 }
 
@@ -242,6 +242,7 @@ unsigned char vnc_connection_read_u16(VncConnection *conn)
 {
   u_int16_t value = 0;
   int r = read(conn->fd, &value, sizeof(value));
+  if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return ntohs(value);
 }
 
@@ -249,6 +250,7 @@ unsigned char vnc_connection_read_u32(VncConnection *conn)
 {
   u_int32_t value = 0;
   int r = read(conn->fd, &value, sizeof(value));
+  if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return ntohl(value);
 }
 
@@ -301,7 +303,7 @@ int vnc_connection_has_error(VncConnection *conn)
 
 static void vnc_connection_read_pixel_format(VncConnection *conn, VncPixelFormat *fmt)
 {
-    unsigned char pad[3];
+    char pad[3];
 
     fmt->bits_per_pixel  = vnc_connection_read_u8(conn);
     fmt->depth           = vnc_connection_read_u8(conn);
@@ -376,6 +378,7 @@ int vnc_connection_perform_auth(VncConnection *conn)
 
   if (priv->minor == 8)
     return vnc_connection_check_auth_result(conn);
+  return TRUE;
 }
 
 int vnc_connection_initialize(VncConnection *conn)
@@ -383,7 +386,6 @@ int vnc_connection_initialize(VncConnection *conn)
   VncConnectionPrivate *priv = conn->priv;
   int ret, i;
   char version[13];
-  char buf[BUFSIZ];
 
   vnc_connection_read(conn, version, 12);
 
@@ -434,7 +436,7 @@ int vnc_connection_initialize(VncConnection *conn)
 
   vnc_connection_read(conn, priv->name, n_name);
   priv->name[n_name] = 0;
-  fprintf(stderr, "Display name '%s'", priv->name);
+  fprintf(stderr, "Display name '%s'\n", priv->name);
 
   if (vnc_connection_has_error(conn))
     return FALSE;
@@ -461,4 +463,5 @@ int main(int ac, char **av)
   // draw_ttyc8(32,32,buf);
   draw_ttyramp(32,32,buf);
 #endif
+  return TRUE;
 }

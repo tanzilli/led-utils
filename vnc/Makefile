@@ -1,5 +1,5 @@
 
-CFLAGS += -Wall -O2 -lz
+CFLAGS += -Wall -O2	# -DHAVE_LEDPANEL # -DHAVE_ZLIB -lz
 
 all: vnc_tiny_view
 

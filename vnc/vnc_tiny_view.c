@@ -14,6 +14,8 @@
  * env VNC_TINY_CFG=/tmp/fifo vnc_tiny_view HOSTNAME
  * echo 10 20 > /tmp/fifo
  *
+ * VNC_TINY_STDOUT=1 can be set for a crude console view.
+ *
  *
  * Code taken from GTK VNC Widget.
  * Below is the copyright of github/gtk-vnc/src/vncconnection.c
@@ -45,7 +47,7 @@
  * FIXME:
  * - add gamma lookup tables to draw_ledpanel_data
  * - view.moved: triggers a full refresh: It should move the ledpanel contents 
- *   locally and only send full requests for missing parts.
+ *   locally and only send refresh requests for missing parts.
  */
 
 #include <stdio.h>
@@ -897,11 +899,12 @@ static int vnc_connection_server_message(VncConnection *conn)
         data = (char *)calloc(sizeof(char), n_text + 1);
         vnc_connection_read(conn, data, n_text);
         data[n_text] = 0;
-        fprintf(stderr, "VNC_CONNECTION_SERVER_MESSAGE_SERVER_CUT_TEXT: %d bytes '%s'\r", n_text, data);
+        // fprintf(stderr, "VNC_CONNECTION_SERVER_MESSAGE_SERVER_CUT_TEXT: %d bytes '%s'\r", n_text, data);
 	free(data);
     }	break;
 
     default:
+	// most likely a protocol error...
         fprintf(stderr, "Received an unknown message: %u\n", msg);
         priv->has_error = TRUE;
         break;
@@ -924,15 +927,38 @@ struct draw_ledpanel_data
   unsigned char *lut;
 };
 
-unsigned char *draw_ledpanel_mklut()
+#ifdef USE_GAMMA_LUT
+// rg, gg, bg, are gamma values in the range of [-16..0..16], -16 is brightest, 0 is linear, 16 is darkest.
+unsigned char *mkgamma_lut(int rg, int gg, int bg)
 {
   unsigned char *lut = (unsigned char *)calloc(3, 256);
-  int i;
 
-  for (i = 0; i < 255; i++)
-    lut[i] = lut[i+256] = lut[i+512] = i/2;
+  unsigned int i;
+
+#define L_POW4(i)    ((i)*(i)*(i)/255*(i)/(255*255))
+#define L_POW3(i)    ((i)*(i)*(i)/        (255*255))
+#define L_POW2(i)        ((i)*(i)/        (255))
+
+#define L_RANGE(o,i)	(32-(o)+(i)*7/8)
+
+  if (rg < 0)
+    for (i = 0; i < 255; i++) lut[i+0*256] = L_RANGE(8, 255-((16+rg)*(255-i)-rg*L_POW2(255-i))/16);
+  else
+    for (i = 0; i < 255; i++) lut[i+0*256] = L_RANGE(8,     ((16-rg)*i      +rg*L_POW2(    i))/16);
+
+  if (gg < 0)
+    for (i = 0; i < 255; i++) lut[i+1*256] = L_RANGE(8, 255-((16+gg)*(255-i)-gg*L_POW2(255-i))/16);
+  else
+    for (i = 0; i < 255; i++) lut[i+1*256] = L_RANGE(8,     ((16-gg)*i      +gg*L_POW2(    i))/16);
+
+  if (bg < 0)
+    for (i = 0; i < 255; i++) lut[i+2*256] = L_RANGE(8, 255-((16+bg)*(255-i)-bg*L_POW2(255-i))/16);
+  else
+    for (i = 0; i < 255; i++) lut[i+2*256] = L_RANGE(8,     ((16-bg)*i      +bg*L_POW2(    i))/16);
+
   return lut;
 }
+#endif
 
 int draw_ledpanel(VncView *view, unsigned char *rgb, int stride, void *data)
 {
@@ -945,10 +971,23 @@ int draw_ledpanel(VncView *view, unsigned char *rgb, int stride, void *data)
   rgb += view->x * 3;
   rgb += view->y * stride;
 
-  if (!d->lut) d->lut = draw_ledpanel_mklut();
+#ifdef USE_GAMMA_LUT
+  // with only 7 values, all on the bright side, gamma correction is hard.
+  if (!d->lut) d->lut = mkgamma_lut(8,8,8);
+#endif
   while (h-- > 0)
     {
+#ifdef USE_GAMMA_LUT
+      int x;
+      for (x = 0; x < 3*32; x+=3)
+        {
+          p[x+0] = d->lut[rgb[x+0]+0*256];
+          p[x+1] = d->lut[rgb[x+1]+1*256];
+          p[x+2] = d->lut[rgb[x+2]+2*256];
+        }
+#else
       memcpy(p, rgb, 3*32);
+#endif
       rgb += stride;
       p += 3*32;
     }
@@ -984,15 +1023,19 @@ Usage:\n\
   conn->view.y = 0;
   conn->view.w = 32;
   conn->view.h = 32;
-#ifdef HAVE_LEDPANEL
-  conn->expose_cb = draw_ledpanel;
+
   struct draw_ledpanel_data draw_ledpanel_data;
-  draw_ledpanel_data.fd = open("/sys/class/ledpanel/rgb_buffer", O_WRONLY);
   draw_ledpanel_data.lut = NULL;
-  conn->expose_cb_data = (void *)&draw_ledpanel_data;
-#else
-  conn->expose_cb = draw_ascii_art;
-#endif
+  draw_ledpanel_data.fd = open("/sys/class/ledpanel/rgb_buffer", O_WRONLY);
+  if (getenv("VNC_TINY_STDOUT") || draw_ledpanel_data.fd < 0)
+    {
+      conn->expose_cb = draw_ascii_art;
+    }
+  else
+    {
+      conn->expose_cb = draw_ledpanel;
+      conn->expose_cb_data = (void *)&draw_ledpanel_data;
+    }
 
   // vncdisplay.c:on_initialized()
   u_int32_t encodings[] = { VNC_CONNECTION_ENCODING_RAW };	// , VNC_CONNECTION_ENCODING_COPY_RECT };

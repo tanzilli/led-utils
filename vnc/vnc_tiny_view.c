@@ -44,6 +44,8 @@
  *
  * FIXME:
  * - add gamma lookup tables to draw_ledpanel_data
+ * - view.moved: triggers a full refresh: It should move the ledpanel contents 
+ *   locally and only send full requests for missing parts.
  */
 
 #include <stdio.h>
@@ -152,6 +154,7 @@ void read_rgb_file(int w, int h, char *fname, unsigned char *buf)
 typedef struct VncView
 {
   int x, y, w, h;
+  int moved;	// FIXME: every move here currently triggers a full update.
 } VncView;
 
 typedef struct VncPixelFormat
@@ -267,10 +270,11 @@ VncConnection *connect_vnc_server(char *hostname, char *str_port)
   conn.view.y = 0;
   conn.view.w = 32;
   conn.view.h = 32;
+  conn.view.moved = 1;		// start with a full update request
   conn.expose_cb = NULL;
   conn.expose_cb_data = NULL;
   priv.rgb = NULL;
-  priv.sharedFlag = FALSE;
+  priv.sharedFlag = TRUE;
   priv.has_error = FALSE;
   conn.priv = &priv;
   conn.fd = sfd;
@@ -499,6 +503,7 @@ int vnc_connection_perform_auth(VncConnection *conn)
   } else {
     int auth_type_none_seen = 0;
     nauth = vnc_connection_read_u8(conn);
+    if (nauth == 0) { fprintf(stderr, "Connection refused or already connected?\n"); }
     if (nauth < 1 || nauth > 10) { fprintf(stderr, "nauth=%d out of range [1..10]\n", nauth); exit(2); }
     for (i = 0 ; i < nauth ; i++)
       {
@@ -821,7 +826,9 @@ static int vnc_connection_server_message(VncConnection *conn)
   if (n == 0)
     {
       // timeout
-      vnc_connection_framebuffer_update_request(conn, 0, conn->view.x, conn->view.y, conn->view.w, conn->view.h);
+      // request incremental updates (or full updates if view.moved).
+      vnc_connection_framebuffer_update_request(conn, conn->view.moved ? 0 : 1, conn->view.x, conn->view.y, conn->view.w, conn->view.h);
+      conn->view.moved = 0;
       return !vnc_connection_has_error(conn);
     }
 
@@ -843,8 +850,11 @@ static int vnc_connection_server_message(VncConnection *conn)
 	      //	conn->view.x,conn->view.y, x,y);
 	      if (x < 0) x = 0;
               if (y < 0) y = 0;
-              conn->view.x = x; if (x+conn->view.w > conn->priv->width)  conn->view.x = conn->priv->width  - view.w;
-              conn->view.y = y; if (y+conn->view.h > conn->priv->height) conn->view.y = conn->priv->height - view.h;
+	      if (x+conn->view.w > conn->priv->width)  x = conn->priv->width  - conn->view.w;
+	      if (y+conn->view.h > conn->priv->height) y = conn->priv->height - conn->view.h;
+	      if (x != conn->view.x || y != conn->view.y) conn->view.moved = 1;
+              conn->view.x = x; 
+              conn->view.y = y; 
             }
         }
       return TRUE;
@@ -917,8 +927,11 @@ struct draw_ledpanel_data
 unsigned char *draw_ledpanel_mklut()
 {
   unsigned char *lut = (unsigned char *)calloc(3, 256);
+  int i;
+
   for (i = 0; i < 255; i++)
     lut[i] = lut[i+256] = lut[i+512] = i/2;
+  return lut;
 }
 
 int draw_ledpanel(VncView *view, unsigned char *rgb, int stride, void *data)
@@ -984,6 +997,7 @@ Usage:\n\
   // vncdisplay.c:on_initialized()
   u_int32_t encodings[] = { VNC_CONNECTION_ENCODING_RAW };	// , VNC_CONNECTION_ENCODING_COPY_RECT };
   vnc_connection_set_encodings(conn, 1, encodings);
+  // non-incremental to begin with.
   vnc_connection_framebuffer_update_request(conn, 0, conn->view.x, conn->view.y, conn->view.w, conn->view.h);
 
   while (vnc_connection_server_message(conn))

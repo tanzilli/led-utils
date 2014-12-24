@@ -43,8 +43,7 @@
 /*
  *
  * FIXME:
- * - check return values of read and write!
- * - add gamma lookup tables to draw_led_panel_data
+ * - add gamma lookup tables to draw_ledpanel_data
  */
 
 #include <stdio.h>
@@ -296,13 +295,26 @@ int vnc_connection_flush(VncConnection *conn)
 
 int vnc_connection_read(VncConnection *conn, char *buf, int len)
 {
-  return read(conn->fd, buf, len);
+  int rr = 0;
+  while (len > 0)
+    {
+      int r = read(conn->fd, buf, len);
+      if (r <= 0) 
+        {
+          conn->priv->has_error = TRUE;
+          return -1;
+        }
+      len -= r;
+      buf += r;
+      rr += r;
+    }
+  return rr;
 }
 
 u_int8_t vnc_connection_read_u8(VncConnection *conn)
 {
   u_int8_t value = 0;
-  int r = read(conn->fd, &value, sizeof(value));
+  int r = vnc_connection_read(conn, (char *)&value, sizeof(value));
   if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return value;
 }
@@ -310,7 +322,7 @@ u_int8_t vnc_connection_read_u8(VncConnection *conn)
 u_int16_t vnc_connection_read_u16(VncConnection *conn)
 {
   u_int16_t value = 0;
-  int r = read(conn->fd, &value, sizeof(value));
+  int r = vnc_connection_read(conn, (char *)&value, sizeof(value));
   if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return ntohs(value);
 }
@@ -318,7 +330,7 @@ u_int16_t vnc_connection_read_u16(VncConnection *conn)
 u_int32_t vnc_connection_read_u32(VncConnection *conn)
 {
   u_int32_t value = 0;
-  int r = read(conn->fd, &value, sizeof(value));
+  int r = vnc_connection_read(conn, (char *)&value, sizeof(value));
   if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return ntohl(value);
 }
@@ -326,7 +338,7 @@ u_int32_t vnc_connection_read_u32(VncConnection *conn)
 int32_t vnc_connection_read_s32(VncConnection *conn)
 {
   int32_t value = 0;
-  int r = read(conn->fd, &value, sizeof(value));
+  int r = vnc_connection_read(conn, (char *)&value, sizeof(value));
   if (r != sizeof(value)) conn->priv->has_error = TRUE;
   return ntohl(value);
 }
@@ -334,30 +346,43 @@ int32_t vnc_connection_read_s32(VncConnection *conn)
 
 int vnc_connection_write(VncConnection *conn, char *buf, int len)
 {
-  return write(conn->fd, buf, len);
+  int rr = 0;
+  while (len > 0)
+    {
+      int r = write(conn->fd, buf, len);
+      if (r <= 0) 
+        {
+          conn->priv->has_error = TRUE;
+          return -1;
+        }
+      len -= r;
+      buf += r;
+      rr += r;
+    }
+  return rr;
 }
 
 int vnc_connection_write_u8(VncConnection *conn, u_int8_t value)
 {
-  return write(conn->fd, &value, sizeof(value));
+  return vnc_connection_write(conn, (char *)&value, sizeof(value));
 }
 
 int vnc_connection_write_u16(VncConnection *conn, u_int32_t value)
 {
   u_int16_t v16 = htons(value);
-  return write(conn->fd, &v16, sizeof(v16));
+  return vnc_connection_write(conn, (char *)&v16, sizeof(v16));
 }
 
 int vnc_connection_write_u32(VncConnection *conn, u_int32_t value)
 {
   value = htonl(value);
-  return write(conn->fd, &value, sizeof(value));
+  return vnc_connection_write(conn, (char *)&value, sizeof(value));
 }
 
 int vnc_connection_write_s32(VncConnection *conn, int32_t value)
 {
   value = htonl(value);
-  return write(conn->fd, &value, sizeof(value));
+  return vnc_connection_write(conn, (char *)&value, sizeof(value));
 }
 
 
@@ -814,10 +839,12 @@ static int vnc_connection_server_message(VncConnection *conn)
           n = sscanf(buf, "%d %d\n", &x, &y);
 	  if (n >= 1)
             {
-	      fprintf(stderr, "View (%d,%d) moved from (%d,%d) to (%d,%d) \n", conn->view.w,conn->view.h,
-		conn->view.x,conn->view.y, x,y);
-              conn->view.x = x;
-              conn->view.y = y;
+	      // fprintf(stderr, "View (%d,%d) moved from (%d,%d) to (%d,%d) \n", conn->view.w,conn->view.h,
+	      //	conn->view.x,conn->view.y, x,y);
+	      if (x < 0) x = 0;
+              if (y < 0) y = 0;
+              conn->view.x = x; if (x+conn->view.w > conn->priv->width)  conn->view.x = conn->priv->width  - view.w;
+              conn->view.y = y; if (y+conn->view.h > conn->priv->height) conn->view.y = conn->priv->height - view.h;
             }
         }
       return TRUE;
@@ -881,15 +908,23 @@ int draw_ascii_art(VncView *view, unsigned char *rgb, int stride, void *data)
   return TRUE;
 }
 
-struct draw_led_panel_data
+struct draw_ledpanel_data
 {
   int fd;
+  unsigned char *lut;
 };
 
-int draw_led_panel(VncView *view, unsigned char *rgb, int stride, void *data)
+unsigned char *draw_ledpanel_mklut()
+{
+  unsigned char *lut = (unsigned char *)calloc(3, 256);
+  for (i = 0; i < 255; i++)
+    lut[i] = lut[i+256] = lut[i+512] = i/2;
+}
+
+int draw_ledpanel(VncView *view, unsigned char *rgb, int stride, void *data)
 {
   // FIXME: need gamma curves here!
-  struct draw_led_panel_data *d = (struct draw_led_panel_data *)data;
+  struct draw_ledpanel_data *d = (struct draw_ledpanel_data *)data;
   static unsigned char led[32*32*3];
   unsigned char *p = led;
   int h = 32;
@@ -897,13 +932,14 @@ int draw_led_panel(VncView *view, unsigned char *rgb, int stride, void *data)
   rgb += view->x * 3;
   rgb += view->y * stride;
 
+  if (!d->lut) d->lut = draw_ledpanel_mklut();
   while (h-- > 0)
     {
       memcpy(p, rgb, 3*32);
       rgb += stride;
       p += 3*32;
     }
-  lseek(d->fd, 0, 0);
+  // lseek(d->fd, 0, 0);
   write(d->fd, led, 3*32*32);
   return TRUE;
 }
@@ -936,10 +972,11 @@ Usage:\n\
   conn->view.w = 32;
   conn->view.h = 32;
 #ifdef HAVE_LEDPANEL
-  conn->expose_cb = draw_led_panel;
-  struct draw_led_panel_data draw_led_panel_data;
-  draw_led_panel_data.fd = open("/sys/class/ledpanel/rgb_buffer", O_WRONLY);
-  conn->expose_cb_data = (void *)&draw_led_panel_data;
+  conn->expose_cb = draw_ledpanel;
+  struct draw_ledpanel_data draw_ledpanel_data;
+  draw_ledpanel_data.fd = open("/sys/class/ledpanel/rgb_buffer", O_WRONLY);
+  draw_ledpanel_data.lut = NULL;
+  conn->expose_cb_data = (void *)&draw_ledpanel_data;
 #else
   conn->expose_cb = draw_ascii_art;
 #endif

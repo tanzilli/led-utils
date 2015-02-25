@@ -25,6 +25,7 @@ b=int(sys.argv[4])
   
 im = Image.new("RGB", (32, 32), "black")
 draw = ImageDraw.Draw(im)
+draw.fontmode="1" #No antialias
 width, height = font.getsize(sys.argv[1])
   
 x = 32

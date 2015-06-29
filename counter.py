@@ -11,7 +11,7 @@ import time
 size = 32, 32
 
 #Load a TTF font
-font = ImageFont.truetype("font/Ubuntu-B.ttf", 26)
+font = ImageFont.truetype("fonts/Ubuntu-B.ttf", 26)
 
 #Count from 0 to 99
 for i in range(99,-1,-1):

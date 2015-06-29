@@ -1,10 +1,9 @@
 #!/usr/bin/python
 # 2 digit counter example for 32x32 RGB led panel
-# (c) 2014 Sergio Tanzilli - sergio@tanzilli.com 
 
 import sys
 import os
-import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 import StringIO
 import time
 
@@ -12,7 +11,7 @@ import time
 size = 32, 32
 
 #Load a TTF font
-font = ImageFont.truetype("Ubuntu-B.ttf", 30)
+font = ImageFont.truetype("font/Ubuntu-B.ttf", 26)
 
 #Count from 0 to 99
 for i in range(99,-1,-1):

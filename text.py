@@ -32,14 +32,19 @@ x = 32
 
 out_file = open("/sys/class/ledpanel/rgb_buffer","w")
 output = StringIO.StringIO()
-while True:
-	x = x - 1
+foreverloop=False
 
+while True:
+	if foreverloop=True:
+		x = x - 1
+	else	
+		break
+		
 	if x < -(width):
 		x = 32
 		
 	draw.rectangle((0, 0, 31, height), outline=0, fill=0)
-	draw.text((x, -1), text, (r<<5,g<<5,b<<5), font=font)
+	draw.text((x, -1), text, (r,g,b), font=font)
 
 	output.truncate(0)
 	im.save(output, format='PPM')

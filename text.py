@@ -11,9 +11,12 @@ from PIL import Image
 from PIL import ImageDraw
 import StringIO
 
-if len(sys.argv)<2 or len(sys.argv)>5:
+if len(sys.argv)<6 or len(sys.argv)>6:
 	print "Syntax:"
-	print "  %s text r g b" % (sys.argv[0])
+	print "  %s text r g b loop" % (sys.argv[0])
+	print
+	print  "loop=0 forever loop"
+	
 	quit()
 
 font = ImageFont.truetype('fonts/Ubuntu-B.ttf', 32)
@@ -22,7 +25,8 @@ text=sys.argv[1]
 r=int(sys.argv[2])
 g=int(sys.argv[3])
 b=int(sys.argv[4])
-  
+loops=int(sys.argv[5])
+	
 im = Image.new("RGB", (32, 32), "black")
 draw = ImageDraw.Draw(im)
 draw.fontmode="1" #No antialias
@@ -32,16 +36,19 @@ x = 32
 
 out_file = open("/sys/class/ledpanel/rgb_buffer","w")
 output = StringIO.StringIO()
-foreverloop=False
 
 while True:
-	if foreverloop=True:
-		x = x - 1
-	else	
-		break
-		
+	x=x-1
+	
 	if x < -(width):
-		x = 32
+		if loops==0:
+			x = 32
+		else: 
+			if loops==1:
+				break
+			else:
+				loops=loops-1	
+				x = 32
 		
 	draw.rectangle((0, 0, 31, height), outline=0, fill=0)
 	draw.text((x, -1), text, (r,g,b), font=font)

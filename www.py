@@ -13,9 +13,9 @@ import threading
 
 sliding_message=None
 sliding_delay=0
-red=1<<5
-green=1<<5
-blue=1<<5
+red=1
+green=1
+blue=1
 
 class SlidingMessage(threading.Thread):
 	message="Vuoto"
@@ -36,7 +36,7 @@ class SlidingMessage(threading.Thread):
 		global red,green,blue
 		global sliding_delay
 		
-		font1 = ImageFont.truetype('Ubuntu-B.ttf',30)
+		font1 = ImageFont.truetype('fonts/Ubuntu-B.ttf',30)
 
 		im = Image.new("RGB", (32, 32), "black")
 		draw = ImageDraw.Draw(im)
@@ -92,9 +92,9 @@ def format_time():
 class set_color(tornado.web.RequestHandler):
 	def get(self):
 		global red,green,blue
-		red = int(self.get_argument("red", default="0"))<<5
-		green = int(self.get_argument("green", default="0"))<<5
-		blue = int(self.get_argument("blue", default="0"))<<5
+		red = int(self.get_argument("red", default="0"))
+		green = int(self.get_argument("green", default="0"))
+		blue = int(self.get_argument("blue", default="0"))
 
 class set_sliding_delay(tornado.web.RequestHandler):
 	def get(self):
@@ -123,7 +123,7 @@ application = tornado.web.Application([
 ])
 
 if __name__ == "__main__":
-	application.listen(8000,"0.0.0.0")
+	application.listen(80,"0.0.0.0")
 	tornado.ioloop.IOLoop.instance().start() 
 	
 

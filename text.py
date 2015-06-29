@@ -16,7 +16,7 @@ if len(sys.argv)<2 or len(sys.argv)>5:
 	print "  %s text r g b" % (sys.argv[0])
 	quit()
 
-font = ImageFont.truetype('Ubuntu-B.ttf', 32)
+font = ImageFont.truetype('fonts/Ubuntu-B.ttf', 32)
 
 text=sys.argv[1]
 r=int(sys.argv[2])

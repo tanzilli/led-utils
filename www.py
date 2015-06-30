@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import tornado.ioloop
 import tornado.web
 import time
@@ -11,6 +13,7 @@ import StringIO
 import thread
 import threading
 import signal
+import commands
 
 class SlidingMessage(threading.Thread):
 	message="LedPanel"
@@ -38,6 +41,13 @@ class SlidingMessage(threading.Thread):
 		self.sliding_delay=sliding_delay
 	
 	def run(self):	
+		ips = commands.getoutput("ifconfig | grep -i inet | grep -iv inet6 | " +
+								"grep -iv 127.0.0.1 | grep -iv 192.168.10.10 |" +
+								"awk {'print $2'} | sed -ne 's/addr\:/ /p'")  
+
+		iplist=ips.splitlines()
+		self.message = "myIP" + " -".join(iplist)
+
 		font1 = ImageFont.truetype('fonts/Ubuntu-B.ttf',30)
 
 		im = Image.new("RGB", (32, 32), "black")
@@ -128,6 +138,7 @@ application = tornado.web.Application([
 t=SlidingMessage()
 
 if __name__ == "__main__":	
+	
 	t.start()
 	
 	signal.signal(signal.SIGINT, signal_handler)
